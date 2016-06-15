@@ -54,10 +54,14 @@ public class ChecksumArchivePublisher extends Publisher implements SimpleBuildSt
         FileUtils.copyInputStreamToFile(new ByteArrayInputStream(text.getBytes()), new File(archiveDir, "index.html"));
 
         try {
-            // Files we serve through the checksum wrapper should have their checksum recorded here
+            // Files we want serve through the checksum wrapper need to have their checksum recorded here.
+
+            // If we had read the file we wrote above there's be a short time in which the file could be manipulated.
+            // Instead, determine file contents, and write the same string to disk that we also generate the checksum from.
             caa.addFile("index.html", calculateChecksum(text));
         } catch (NoSuchAlgorithmException nsa) {
-            // SHA-1 is guaranteed to exist
+            // SHA-1 is guaranteed to exist.
+            // If it does not for some crazy reason, we just serve directly from DirectoryBrowserSupport, i.e. with Content-Security-Policy.
         }
     }
 
