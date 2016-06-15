@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+  This plugin is a sample to explain how to safely archive and serve HTML files that include JavaScript that would be prohibited by Jenkins' Content-Security-Policy when served by DirectoryBrowserSupport.
+</div>
