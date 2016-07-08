@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.checksumarchivedemo;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -12,17 +11,11 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by danielbeck on 15.06.2016.
@@ -37,38 +30,17 @@ public class ChecksumArchivePublisher extends Publisher implements SimpleBuildSt
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws InterruptedException, IOException {
 
-        ChecksumArchiveAction caa = new ChecksumArchiveAction();
-        run.addAction(caa);
-
         File archiveDir = new File(run.getRootDir(), "checksumArchive");
-        archiveDir.mkdirs();
 
-        // files we can serve as-is, with Content-Security-Policy headers, can just be copied over
-        FileUtils.copyInputStreamToFile(this.getClass().getResourceAsStream("style.css"), new File(archiveDir, "style.css"));
-        FileUtils.copyInputStreamToFile(this.getClass().getResourceAsStream("script.js"), new File(archiveDir, "script.js"));
+        File resourceDir = new File(archiveDir, "resources");
+        resourceDir.mkdirs();
+        FileUtils.copyInputStreamToFile(this.getClass().getResourceAsStream("style.css"), new File(resourceDir, "style.css"));
+        FileUtils.copyInputStreamToFile(this.getClass().getResourceAsStream("script.js"), new File(resourceDir, "script.js"));
+        FileUtils.copyInputStreamToFile(this.getClass().getResourceAsStream("index.html"), new File(archiveDir, "index.html"));
 
-        // get the text of the file that is to be served through the wrapper file to safely circumvent Content-Security-Policy
-        StringWriter sw = new StringWriter();
-        IOUtils.copy(this.getClass().getResourceAsStream("index.html"), sw);
-        String text = sw.toString();
-        FileUtils.copyInputStreamToFile(new ByteArrayInputStream(text.getBytes()), new File(archiveDir, "index.html"));
+        SafeArchiveServingRunAction caa = new SafeArchiveServingRunAction(archiveDir, "checksumArchive", "index.html", "clipboard", "Checksum Safe Archive");
 
-        try {
-            // Files we want serve through the checksum wrapper need to have their checksum recorded here.
-
-            // If we had read the file we wrote above there's be a short time in which the file could be manipulated.
-            // Instead, determine file contents, and write the same string to disk that we also generate the checksum from.
-            caa.addFile("index.html", calculateChecksum(text));
-        } catch (NoSuchAlgorithmException nsa) {
-            // SHA-1 is guaranteed to exist.
-            // If it does not for some crazy reason, we just serve directly from DirectoryBrowserSupport, i.e. with Content-Security-Policy.
-        }
-    }
-
-    private String calculateChecksum(String text) throws NoSuchAlgorithmException, UnsupportedEncodingException {
-        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
-        sha1.update(text.getBytes("UTF-8"));
-        return Util.toHexString(sha1.digest());
+        run.addAction(caa);
     }
 
     @Override
