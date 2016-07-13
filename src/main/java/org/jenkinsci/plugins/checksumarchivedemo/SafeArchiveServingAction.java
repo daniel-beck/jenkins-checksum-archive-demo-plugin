@@ -1,10 +1,7 @@
 package org.jenkinsci.plugins.checksumarchivedemo;
 
-import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Action;
-import hudson.model.DirectoryBrowserSupport;
-import hudson.model.Run;
 import hudson.util.HttpResponses;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -21,10 +18,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,8 +43,6 @@ import java.util.logging.Logger;
 public class SafeArchiveServingAction implements Action {
 
     private Map<String,String> fileChecksums = new HashMap<>();
-
-    private transient Run run;
 
     private final File rootDir;
 
@@ -155,10 +148,6 @@ public class SafeArchiveServingAction implements Action {
         return false;
     }
 
-    public Run getRun() {
-        return run;
-    }
-
     @Override
     public String getIconFileName() {
         return iconName;
@@ -179,7 +168,7 @@ public class SafeArchiveServingAction implements Action {
     }
 
     public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
-        DirectoryBrowserSupport dbs = new DirectoryBrowserSupport(this, new FilePath(getRootDir()), title, iconName, false);
+
         if (LOGGER.isLoggable(Level.FINEST)) {
             LOGGER.log(Level.FINEST, "Serving " + req.getRestOfPath());
         }
